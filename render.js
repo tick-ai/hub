@@ -154,12 +154,19 @@ export function changeNote(change, place) {
   return `<p class="change">Changed character ${change.at + 1} of the receipt (line ${place.line}, column ${place.column}${where}): ${shown(change.from)} became ${shown(change.to)}. The receipt on disk is unchanged.</p>`;
 }
 
-/** One order: its stations, its whole record, and the button that checks its receipt in this browser. */
-export function orderCard(order, verified, record = recordOf(order)) {
+export const NO_RECEIPT = 'This order has no receipt: no work order was signed when its work started.';
+
+/**
+ * One order: its stations, its whole record, and the button that checks its receipt in this browser.
+ * `noReceipt` is true where the folder holds no receipt file for an accepted order: it says so, with no button.
+ */
+export function orderCard(order, verified, record = recordOf(order), noReceipt = false) {
   const check =
     !order.accepted
       ? '<p class="src">No receipt: this work was not accepted.</p>'
-      : `<div class="buttons"><button type="button" class="check" data-task="${esc(order.taskId)}">Check it yourself</button></div>`;
+      : noReceipt
+        ? `<p class="src no-receipt">${NO_RECEIPT}</p>`
+        : `<div class="buttons"><button type="button" class="check" data-task="${esc(order.taskId)}">Check it yourself</button></div>`;
   return `<article class="card order" id="o-${esc(order.taskId)}">
   ${stationsLine(order, verified)}
   <p class="mono src">${esc(order.taskId)}${order.disposition === null ? '' : ` · ${esc(order.disposition)}`}</p>
