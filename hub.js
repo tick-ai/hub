@@ -10,8 +10,12 @@ import { verifyDocument } from './verify.js';
 
 const main = document.getElementById('main');
 
+/** A file the folder does not hold (404), as opposed to one that could not be read. */
+class MissingFile extends Error {}
+
 async function textOf(path) {
   const answer = await fetch(path, { cache: 'no-cache' });
+  if (answer.status === 404) throw new MissingFile(`${path}: ${answer.status}`);
   if (!answer.ok) throw new Error(`${path}: ${answer.status}`);
   return answer.text();
 }
@@ -75,16 +79,16 @@ async function projectPage(slug) {
   // An order's receipt holds what the statement does not; it fills the record only where it verified here.
   const records = await Promise.all(
     orders.map(async (order) => {
-      if (!order.accepted) return recordOf(order);
+      if (!order.accepted) return { record: recordOf(order), noReceipt: false };
       try {
         const read = await checked(receiptPath(project.slug, order.taskId), 'receipt');
-        return recordOf(order, read.verified ? read.document : null);
-      } catch {
-        return recordOf(order);
+        return { record: recordOf(order, read.verified ? read.document : null), noReceipt: false };
+      } catch (error) {
+        return { record: recordOf(order), noReceipt: error instanceof MissingFile };
       }
     }),
   );
-  orders.forEach((order, i) => cards.push(orderCard(order, false, records[i])));
+  orders.forEach((order, i) => cards.push(orderCard(order, false, records[i].record, records[i].noReceipt)));
   const notice = index.verified ? '' : '<p class="tag halt">This index does not verify in this browser. Nothing below is shown as checked.</p>';
   main.innerHTML = `${notice}<h1>${esc(project.name)}</h1><p class="mono src">${esc(project.repository)}</p>${cards.join('\n')}`;
   for (const button of main.querySelectorAll('button.check')) {
