@@ -24,6 +24,10 @@ only where this browser has just verified a signature.
 Put this page's files beside them on any static host. The page makes no request
 but for those files: its content security policy allows nothing else.
 
+The fonts in `fonts/` are Instrument Sans, Instrument Serif and DM Mono, each under
+the SIL Open Font License 1.1 (`fonts/OFL.txt`), so the page loads nothing from
+anywhere else.
+
 ## Checks
 
 `node --test` runs every test; Tick runs the same as this repository's check.
