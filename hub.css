@@ -49,6 +49,7 @@ main { display: grid; gap: 16px; padding-block: 16px 48px; }
 .mono, .src { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
 .mono-chip { display: inline-grid; place-items: center; min-width: 26px; padding: 1px 5px; border-radius: 6px; background: var(--mist); font: 600 11.5px var(--sans); }
 .tag { display: inline-block; margin: 0; padding: 3px 9px; border-radius: 6px; background: var(--mist); color: var(--ink-soft); font-size: 12.5px; font-weight: 600; justify-self: start; }
+.tag.halt { background: var(--halt-wash); color: var(--halt); }
 .tag.ticked { background: var(--tick-wash); color: var(--tick-text); }
 .line { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; font-weight: 600; }
 .line li { color: var(--ink-soft); }
@@ -60,3 +61,7 @@ button.check:focus-visible, a:focus-visible { outline: 2px solid var(--ink); out
 .verdict { font-size: 13.5px; color: var(--ink-soft); }
 .foot { color: var(--ink-soft); font-size: 12.5px; padding-block: 24px; border-top: 1px solid var(--rule); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.taken-out { display: grid; gap: 8px; }
+.taken-out h2 { margin: 0; font-size: 18px; }
+.taken-out ul { margin: 0; padding-left: 18px; color: var(--ink-soft); }
+.taken-out li.ticked { color: var(--tick-text); }

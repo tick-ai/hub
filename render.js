@@ -2,6 +2,7 @@
 // reaches the page as text, never as markup: every value goes through esc().
 // Green appears only where the caller says this browser verified a document.
 
+import { STOPPED } from './chain.js';
 import { dollars, monogramOf, stationsOf } from './model.js';
 
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -17,8 +18,37 @@ function agentsLine(agents) {
     .join(' · ');
 }
 
-/** The front page: one card per project, its figures from the head statements of its runs. */
-export function frontPage(summaries, indexVerified) {
+const dayOf = (index) => String(index.issuedAt).slice(0, 10);
+
+/**
+ * "Taken out of this index": one line per project or run an older index listed and the
+ * newest does not, with the date of the last index that listed it, and where the chain
+ * stopped if it did. A line is green only where every index back to that one verified here.
+ */
+export function takenOutSection(taken, stopped) {
+  const lines = taken
+    .map((one) => {
+      const what =
+        one.kind === 'project'
+          ? `Project ${esc(one.name)} <span class="mono">${esc(one.slug)}</span>`
+          : `Run <span class="mono">${esc(one.run_id)}</span> of ${esc(one.name)}`;
+      return `<li class="${one.verified ? 'ticked' : 'plain'}">${what}: last listed in the index of ${esc(dayOf(one.last))}</li>`;
+    })
+    .join('');
+  const none = taken.length === 0 && stopped === null ? '<p class="src">Nothing an older index listed is missing from this one.</p>' : '';
+  const where =
+    stopped === null
+      ? ''
+      : `<p class="tag halt">The chain stopped at ${esc(stopped.hash)}${stopped.from === null ? '' : `, named by ${esc(stopped.from)}`}: ${esc(STOPPED[stopped.reason] ?? stopped.reason)} (${esc(stopped.detail)}). Older indexes were not read.</p>`;
+  return `<section class="taken-out"><h2>Taken out of this index</h2>${lines === '' ? '' : `<ul>${lines}</ul>`}${none}${where}</section>`;
+}
+
+/**
+ * The front page: one card per project, its figures from the head statements of its
+ * runs. `history`, where given, is `{ taken, stopped }` from chain.js. An index that
+ * does not verify is said so at the top, and nothing is green.
+ */
+export function frontPage(summaries, indexVerified, history) {
   const cards = summaries
     .map(
       (one) => `<article class="card">
@@ -37,8 +67,9 @@ export function frontPage(summaries, indexVerified) {
     .join('\n');
   const verdict = indexVerified
     ? '<p class="tag ticked">The index is signed and this browser checked it.</p>'
-    : '<p class="tag">This browser has not checked the index yet.</p>';
-  return `<section class="front">${verdict}\n${cards}</section>`;
+    : '<p class="tag halt">This index does not verify in this browser. Nothing below is shown as checked.</p>';
+  const taken = history === undefined || !indexVerified ? '' : takenOutSection(history.taken, history.stopped);
+  return `<section class="front">${verdict}\n${cards}\n${taken}</section>`;
 }
 
 /** The stations of one order, Ticked earned only by this browser's check of its receipt. */
