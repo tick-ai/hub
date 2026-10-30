@@ -1,5 +1,9 @@
 /* Tick's design system as TickHub uses it (docs/design.md): paper and ink, green
    only for what this browser verified, records' numbers in a ledger face. */
+@font-face { font-family: 'Instrument Sans'; src: url(fonts/instrument-sans.woff2) format('woff2'); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: 'Instrument Serif'; src: url(fonts/instrument-serif-400.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url(fonts/dm-mono-400.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url(fonts/dm-mono-500.woff2) format('woff2'); font-weight: 500; font-display: swap; }
 :root {
   --paper: #ffffff;
   --mist: #f3f6f4;
@@ -38,7 +42,9 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.55 v
 .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 700; letter-spacing: -0.02em; font-size: 18px; }
 .brand .hub { color: var(--ink-soft); font-weight: 500; }
 .beat { fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
-main { display: grid; gap: 16px; padding-block: 16px 48px; }
+main, .front { display: grid; gap: 16px; }
+main { padding-block: 16px 48px; }
+h1 { margin: 8px 0 0; font-size: 30px; line-height: 1.15; letter-spacing: -0.02em; }
 .card { border: 1px solid var(--rule); border-radius: 12px; padding: 18px; display: grid; gap: 10px; min-width: 0; }
 .card h2 { margin: 0; font-size: 18px; }
 .card h2 a { color: inherit; }
@@ -54,14 +60,15 @@ main { display: grid; gap: 16px; padding-block: 16px 48px; }
 .line { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; font-weight: 600; }
 .line li { color: var(--ink-soft); }
 .line li.on { color: var(--ink); }
-.line li.ticked { color: var(--tick-text); }
+.line li.ticked { color: var(--tick-text); animation: ticked 240ms ease-out 1; }
+@keyframes ticked { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
 .tries { margin: 0; padding-left: 18px; color: var(--ink-soft); font-size: 13.5px; }
 button.check { justify-self: start; font: 600 13.5px var(--sans); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; }
 button.check:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .verdict { font-size: 13.5px; color: var(--ink-soft); }
 .foot { color: var(--ink-soft); font-size: 12.5px; padding-block: 24px; border-top: 1px solid var(--rule); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-.taken-out { display: grid; gap: 8px; }
+.taken-out { display: grid; gap: 8px; margin-top: 16px; }
 .taken-out h2 { margin: 0; font-size: 18px; }
 .taken-out ul { margin: 0; padding-left: 18px; color: var(--ink-soft); }
 .taken-out li.ticked { color: var(--tick-text); }
@@ -74,4 +81,6 @@ button.check:focus-visible, a:focus-visible { outline: 2px solid var(--ink); out
 button.again { background: var(--paper); color: var(--ink); }
 .verdict h3 { margin: 12px 0 4px; font-size: 13.5px; color: var(--ink); }
 .verdict ul { margin: 4px 0; padding-left: 18px; }
-.change { margin: 6px 0; }
+.change, .one-key { margin: 6px 0; }
+.tries .mono { font-size: 12px; }
+.figure.none { font: 500 15px/2 var(--sans); color: var(--ink-soft); }

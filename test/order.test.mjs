@@ -73,8 +73,8 @@ test('an order’s record names each try with its cost as reported, or no cost r
   assert.deepEqual(
     record.tries.map((one) => [one.agent, one.model, one.minutes, one.cost]),
     [
-      ['claude', 'claude-sonnet-5-5', 9.6, '$0.66, as reported'],
-      ['codex', null, null, 'no cost reported'],
+      ['claude', 'claude-sonnet-5-5', 9.6, '$0.66, as the agent reported it'],
+      ['codex', null, null, 'not reported'],
     ],
   );
 });

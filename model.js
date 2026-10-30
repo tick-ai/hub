@@ -62,6 +62,7 @@ export function summaryOf(project, statements) {
   let orders = 0;
   let accepted = 0;
   let agentTries = 0;
+  let agentTriesReported = 0;
   let tries = 0;
   let unknown = 0;
   let reported = 0;
@@ -77,6 +78,7 @@ export function summaryOf(project, statements) {
       if (order.accepted) accepted += 1;
       for (const one of order.tries) {
         agentTries += 1;
+        if (one.cost !== 'unknown') agentTriesReported += 1;
         const key = `${one.agent}\u0000${one.model ?? ''}`;
         const seen = agents.get(key) ?? { agent: one.agent, model: one.model, tries: 0 };
         seen.tries += 1;
@@ -92,6 +94,7 @@ export function summaryOf(project, statements) {
     accepted,
     tries,
     agentTries,
+    agentTriesReported,
     tickTries: tries - agentTries,
     triesUnknown: unknown,
     usdMicrosReported: reported,
@@ -118,8 +121,19 @@ export function stationsOf(order, verified) {
 
 /** Two letters for an agent, as Tick's screens show it: CC for Claude Code, Cx for Codex. */
 export function monogramOf(agent) {
-  const known = { claude: 'CC', 'claude-code': 'CC', codex: 'Cx', grok: 'GB' };
+  const known = { claude: 'CC', 'claude-code': 'CC', codex: 'Cx', grok: 'GB', 'attached-session': 'Cn' };
   return known[agent] ?? agent.slice(0, 2).toUpperCase();
+}
+
+/** An agent as a person reads it. A conversation's own try named no agent in earlier records. */
+export function agentNameOf(agent) {
+  const known = { claude: 'Claude Code', 'claude-code': 'Claude Code', codex: 'Codex', grok: 'Grok', 'attached-session': 'an agent in a conversation' };
+  return known[agent] ?? agent;
+}
+
+/** What the agents' tries cost, or that no agent's try reported a cost: a figure the record lacks is never a zero. */
+export function costOfAgents(summary) {
+  return summary.agentTriesReported === 0 ? 'not reported' : dollars(summary.usdMicrosReported);
 }
 
 /** A field the record holds. */
@@ -133,8 +147,8 @@ const NOT_HELD = 'the statement does not hold it, and the receipt was not read';
 function tryRecord(one) {
   const cost =
     one.cost === 'unknown' || one.usd_micros === null || one.usd_micros === undefined
-      ? 'no cost reported'
-      : `${dollars(one.usd_micros)}, ${one.cost === 'metered' ? 'metered' : 'as reported'}`;
+      ? 'not reported'
+      : `${dollars(one.usd_micros)}, ${one.cost === 'metered' ? 'metered' : 'as the agent reported it'}`;
   return {
     agent: one.agent,
     model: one.model ?? null,

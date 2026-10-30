@@ -3,7 +3,7 @@
 // Green appears only where the caller says this browser verified a document.
 
 import { STOPPED } from './chain.js';
-import { dollars, monogramOf, recordOf, stationsOf } from './model.js';
+import { agentNameOf, costOfAgents, monogramOf, recordOf, stationsOf } from './model.js';
 
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
@@ -14,7 +14,7 @@ export function esc(value) {
 function agentsLine(agents) {
   if (agents.length === 0) return 'no try recorded yet';
   return agents
-    .map((one) => `<span class="mono-chip" title="${esc(one.agent)}">${esc(monogramOf(one.agent))}</span> ${esc(one.model ?? one.agent)} · ${one.tries} ${one.tries === 1 ? 'try' : 'tries'}`)
+    .map((one) => `<span class="mono-chip" title="${esc(one.agent)}">${esc(monogramOf(one.agent))}</span> ${esc(agentNameOf(one.agent))}${one.model === null ? '' : `, <span class="mono">${esc(one.model)}</span>`} · ${one.tries} ${one.tries === 1 ? 'try' : 'tries'}`)
     .join(' · ');
 }
 
@@ -58,7 +58,7 @@ export function frontPage(summaries, indexVerified, history) {
     <div><dt>orders accepted</dt><dd class="figure">${one.accepted} of ${one.orders}</dd></div>
     <div><dt>tries by agents</dt><dd class="figure">${one.agentTries}</dd></div>
     <div><dt>Tick's own steps</dt><dd class="figure">${one.tickTries}</dd></div>
-    <div><dt>cost, as the agents reported it</dt><dd class="figure">${esc(dollars(one.usdMicrosReported))}</dd></div>
+    <div><dt>cost, as the agents reported it</dt><dd class="figure${one.agentTriesReported === 0 ? ' none' : ''}">${esc(costOfAgents(one))}</dd></div>
     <div><dt>tries with no cost reported</dt><dd class="figure">${one.triesUnknown}</dd></div>
   </dl>
   <p class="agents">${agentsLine(one.agents)}</p>
@@ -93,30 +93,38 @@ function askedLine(asked) {
 function checksLine(checks) {
   if (checks.state !== 'held') return missingLine(checks.why);
   const ran = checks.results.map((one) => `${esc(one.name)}: ${esc(one.outcome)}`).join(' · ');
-  return `${ran === '' ? 'no check ran' : ran}${checks.verdict === null ? '' : ` · ${esc(checks.verdict)}`}`;
+  // The verdict is said only where the results do not already say it.
+  const said = checks.verdict === null || checks.results.every((one) => one.outcome === checks.verdict);
+  return `${ran === '' ? 'no check ran' : ran}${said ? '' : ` · ${esc(checks.verdict)}`}`;
+}
+
+/** A time as a person reads it, in UTC; what the record holds, where it is no time. */
+function whenOf(at) {
+  const time = new Date(at);
+  return Number.isNaN(time.getTime()) ? String(at) : `${time.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 }
 
 function acceptedLine(accepted) {
   if (accepted.state === 'not-accepted') return 'not accepted: no receipt';
   if (accepted.state !== 'held') return missingLine(accepted.why);
   const how = accepted.by === 'auto-tick' ? 'Accepted by auto tick, for' : accepted.by === 'checks' ? 'Accepted by its checks:' : 'Accepted by';
-  return `${how} ${esc(accepted.who)} · ${esc(accepted.at)}`;
+  return `${how} ${esc(accepted.who)} · ${esc(whenOf(accepted.at))}`;
 }
 
 /** An order's whole record as rows: what was asked, each try, the commit, the checks, who accepted it. */
 export function recordSection(record) {
   const tries = record.tries
     .map(
-      (one) => `<li><span class="mono-chip">${esc(monogramOf(one.agent))}</span> ${esc(one.agent)} · ${one.model === null ? 'model missing' : esc(one.model)} · ${esc(minutesText(one.minutes))} · ${esc(one.cost)} · ${esc(one.outcome)}</li>`,
+      (one) => `<li><span class="mono-chip" title="${esc(one.agent)}">${esc(monogramOf(one.agent))}</span> ${esc(agentNameOf(one.agent))} · ${one.model === null ? 'model not recorded' : `<span class="mono">${esc(one.model)}</span>`} · ${esc(minutesText(one.minutes))} · ${esc(one.cost)} · ${one.outcome === 'success' ? 'done' : esc(one.outcome)}</li>`,
     )
     .join('');
   const commit = record.commit.state === 'held' ? `<span class="mono">${esc(record.commit.commit)}</span>` : missingLine(record.commit.why);
   return `<dl class="record">
   <div><dt>Asked</dt><dd>${askedLine(record.asked)}</dd></div>
-  <div><dt>Tries</dt><dd>${tries === '' ? missingLine('no try is in the statement') : `<ul class="tries">${tries}</ul>`}</dd></div>
-  <div><dt>Commit</dt><dd>${commit}</dd></div>
-  <div><dt>Checks</dt><dd>${checksLine(record.checks)}</dd></div>
-  <div><dt>Accepted</dt><dd>${acceptedLine(record.accepted)}</dd></div>
+  <div><dt>Done by</dt><dd>${tries === '' ? missingLine('no try is in the statement') : `<ul class="tries">${tries}</ul>`}</dd></div>
+  <div><dt>Checked</dt><dd>${checksLine(record.checks)}</dd></div>
+  <div><dt>Approved by</dt><dd>${acceptedLine(record.accepted)}</dd></div>
+  <div><dt>Landed</dt><dd>${commit}</dd></div>
 </dl>`;
 }
 
@@ -134,7 +142,9 @@ export function verdictHtml(verdict) {
   const signers = verdict.signers ?? {};
   const keys = ROLES.filter((role) => role in signers).map((role) => `<li>${esc(role)}: <span class="mono">${signers[role] === null ? 'no key' : esc(signers[role])}</span></li>`);
   const keysHtml = keys.length === 0 ? '' : `<h3>Who signed (key_id)</h3><ul class="keys">${keys.join('')}</ul>`;
-  return `${head}${limits}${keysHtml}`;
+  const one = ROLES.every((role) => typeof signers[role] === 'string' && signers[role] === signers.buyer);
+  const oneKey = verdict.valid && one ? `<p class="one-key">Signed by <span class="mono">${esc(signers.buyer)}</span>: one company ordered, did, checked and accepted this work.</p>` : '';
+  return `${head}${oneKey}${limits}${keysHtml}`;
 }
 
 /** What "Change one character" did, named so the visitor can see it. */
