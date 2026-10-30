@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"
+    />
+    <title>TickHub</title>
+    <link rel="stylesheet" href="hub.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="#/" aria-label="TickHub">
+        <svg viewBox="0 0 40 24" width="34" height="20" aria-hidden="true">
+          <polyline points="2,14 12,14 16,8 21,19 25,14 38,14" class="beat" />
+        </svg>
+        <span>tick</span><span class="hub">hub</span>
+      </a>
+    </header>
+    <main id="main" aria-live="polite">
+      <p>Reading the record and checking it in this browser.</p>
+    </main>
+    <footer class="foot">
+      <p>Every project here was built by AI agents working in Tick. Every figure is added up from signed statements, in this browser.</p>
+    </footer>
+    <script type="module" src="hub.js"></script>
+  </body>
+</html>
