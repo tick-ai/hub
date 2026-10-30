@@ -3,7 +3,7 @@
 // Green appears only where the caller says this browser verified a document.
 
 import { STOPPED } from './chain.js';
-import { dollars, monogramOf, stationsOf } from './model.js';
+import { dollars, monogramOf, recordOf, stationsOf } from './model.js';
 
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
@@ -79,21 +79,81 @@ export function stationsLine(order, verified) {
     .join('')}</ol>`;
 }
 
-/** One order: what was asked is in its receipt; here, its stations, its tries and what they cost. */
-export function orderCard(order, verified) {
-  const tries = order.tries
+const minutesText = (minutes) => (minutes === null ? 'minutes missing' : `${(Math.round(minutes * 10) / 10).toString()} min`);
+
+/** A field the record lacks, said so. */
+const missingLine = (why) => `<span class="missing">missing: ${esc(why)}</span>`;
+
+function askedLine(asked) {
+  if (asked.state !== 'held') return missingLine(asked.why);
+  if (asked.whole === asked.first) return esc(asked.first);
+  return `<details><summary>${esc(asked.first)}</summary><pre class="whole">${esc(asked.whole)}</pre></details>`;
+}
+
+function checksLine(checks) {
+  if (checks.state !== 'held') return missingLine(checks.why);
+  const ran = checks.results.map((one) => `${esc(one.name)}: ${esc(one.outcome)}`).join(' · ');
+  return `${ran === '' ? 'no check ran' : ran}${checks.verdict === null ? '' : ` · ${esc(checks.verdict)}`}`;
+}
+
+function acceptedLine(accepted) {
+  if (accepted.state === 'not-accepted') return 'not accepted: no receipt';
+  if (accepted.state !== 'held') return missingLine(accepted.why);
+  const how = accepted.by === 'auto-tick' ? 'Accepted by auto tick, for' : accepted.by === 'checks' ? 'Accepted by its checks:' : 'Accepted by';
+  return `${how} ${esc(accepted.who)} · ${esc(accepted.at)}`;
+}
+
+/** An order's whole record as rows: what was asked, each try, the commit, the checks, who accepted it. */
+export function recordSection(record) {
+  const tries = record.tries
     .map(
-      (one) => `<li><span class="mono-chip">${esc(monogramOf(one.agent))}</span> ${esc(one.agent)} · ${esc(one.model ?? 'model not reported')} · ${one.minutes === null ? '—' : `${(Math.round(one.minutes * 10) / 10).toString()} min`} · ${esc(one.cost === 'unknown' ? 'not reported' : `${dollars(one.usd_micros)}, as reported`)} · ${esc(one.outcome)}</li>`,
+      (one) => `<li><span class="mono-chip">${esc(monogramOf(one.agent))}</span> ${esc(one.agent)} · ${one.model === null ? 'model missing' : esc(one.model)} · ${esc(minutesText(one.minutes))} · ${esc(one.cost)} · ${esc(one.outcome)}</li>`,
     )
     .join('');
+  const commit = record.commit.state === 'held' ? `<span class="mono">${esc(record.commit.commit)}</span>` : missingLine(record.commit.why);
+  return `<dl class="record">
+  <div><dt>Asked</dt><dd>${askedLine(record.asked)}</dd></div>
+  <div><dt>Tries</dt><dd>${tries === '' ? missingLine('no try is in the statement') : `<ul class="tries">${tries}</ul>`}</dd></div>
+  <div><dt>Commit</dt><dd>${commit}</dd></div>
+  <div><dt>Checks</dt><dd>${checksLine(record.checks)}</dd></div>
+  <div><dt>Accepted</dt><dd>${acceptedLine(record.accepted)}</dd></div>
+</dl>`;
+}
+
+const ROLES = ['buyer', 'doer', 'checker', 'acceptor'];
+
+/**
+ * A verdict in words: valid, or every reason it is not; then what the document does not
+ * establish and the key_id behind each role.
+ */
+export function verdictHtml(verdict) {
+  const head = verdict.valid
+    ? '<p class="tag ticked">Valid: every signature verified in this browser, and the documents chain.</p>'
+    : `<p class="tag halt">Not valid, for ${verdict.reasons.length === 1 ? 'this reason' : 'these reasons'}:</p><ul class="reasons">${verdict.reasons.map((one) => `<li>${esc(one)}</li>`).join('')}</ul>`;
+  const limits = verdict.limits.length === 0 ? '' : `<h3>What this does not establish</h3><ul class="limits">${verdict.limits.map((one) => `<li>${esc(one)}</li>`).join('')}</ul>`;
+  const signers = verdict.signers ?? {};
+  const keys = ROLES.filter((role) => role in signers).map((role) => `<li>${esc(role)}: <span class="mono">${signers[role] === null ? 'no key' : esc(signers[role])}</span></li>`);
+  const keysHtml = keys.length === 0 ? '' : `<h3>Who signed (key_id)</h3><ul class="keys">${keys.join('')}</ul>`;
+  return `${head}${limits}${keysHtml}`;
+}
+
+/** What "Change one character" did, named so the visitor can see it. */
+export function changeNote(change, place) {
+  const shown = (char) => `<span class="mono">“${esc(char)}”</span>`;
+  const where = place.field === null ? '' : `, in ${esc(place.field)}`;
+  return `<p class="change">Changed character ${change.at + 1} of the receipt (line ${place.line}, column ${place.column}${where}): ${shown(change.from)} became ${shown(change.to)}. The receipt on disk is unchanged.</p>`;
+}
+
+/** One order: its stations, its whole record, and the button that checks its receipt in this browser. */
+export function orderCard(order, verified, record = recordOf(order)) {
   const check =
     !order.accepted
       ? '<p class="src">No receipt: this work was not accepted.</p>'
-      : `<button type="button" class="check" data-task="${esc(order.taskId)}">Check it yourself</button>`;
+      : `<div class="buttons"><button type="button" class="check" data-task="${esc(order.taskId)}">Check it yourself</button></div>`;
   return `<article class="card order" id="o-${esc(order.taskId)}">
   ${stationsLine(order, verified)}
   <p class="mono src">${esc(order.taskId)}${order.disposition === null ? '' : ` · ${esc(order.disposition)}`}</p>
-  <ul class="tries">${tries}</ul>
+  ${recordSection(record)}
   ${check}
   <div class="verdict" aria-live="polite"></div>
 </article>`;
