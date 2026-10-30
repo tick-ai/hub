@@ -34,9 +34,6 @@ anywhere else.
 
 ## How it was built
 
-Every commit after this repository's first was made by an AI agent working in
-Tick, and each carries a receipt that verifies. The first commit holds only the
-order: the specification, the vectors, the design it follows and the check that
-decides done. TickHub shows the record of its own making.
+Every commit after this repository's first was made by an AI agent working in Tick. The first commit holds only the order: the specification, the vectors, the design it follows and the check that decides done. Three landings have no receipt: 953f1860 (verify.js), 564bfd99 (the index chain) and afb9ffb9 (an order's whole record). Their tasks named top-level files in a form Tick could not sign, so no work order was signed when their work started, and one cannot be signed after it. They stay in the history, and ticked-line.json draws the line after them: every landing after afb9ffb9 carries a receipt that verifies. TickHub shows the record of its own making, gaps included.
 
 Licensed under the Apache License, Version 2.0.
