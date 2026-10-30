@@ -84,3 +84,5 @@ button.again { background: var(--paper); color: var(--ink); }
 .change, .one-key { margin: 6px 0; }
 .tries .mono { font-size: 12px; }
 .figure.none { font: 500 15px/2 var(--sans); color: var(--ink-soft); }
+.ask { margin: 8px 0 0; color: var(--ink); font-size: 15px; }
+.ask a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }

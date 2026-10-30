@@ -27,6 +27,15 @@ test('an accepted order with no receipt file says so, with no check button and n
   assert.doesNotMatch(html, /<button/u);
   assert.doesNotMatch(html, /Check it yourself/u);
   assert.doesNotMatch(html, /ticked/u);
+  assert.ok(html.includes('<dt>Done by</dt>'));
+  assert.ok(!html.includes('missing:'));
+  for (const row of ['Asked', 'Checked', 'Approved by', 'Landed']) assert.ok(!html.includes(`<dt>${row}</dt>`), row);
+});
+
+test('an accepted order whose receipt file is there but unread still shows its rows as missing', () => {
+  const html = orderCard(order, false, recordOf(order), false);
+  assert.ok(html.includes('missing:'));
+  for (const row of ['Asked', 'Done by', 'Checked', 'Approved by', 'Landed']) assert.ok(html.includes(`<dt>${row}</dt>`), row);
 });
 
 test('an accepted order whose receipt file is there keeps its check button', () => {

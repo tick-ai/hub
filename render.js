@@ -69,7 +69,8 @@ export function frontPage(summaries, indexVerified, history) {
     ? '<p class="tag ticked">The index is signed and this browser checked it.</p>'
     : '<p class="tag halt">This index does not verify in this browser. Nothing below is shown as checked.</p>';
   const taken = history === undefined || !indexVerified ? '' : takenOutSection(history.taken, history.stopped);
-  return `<section class="front">${verdict}\n${cards}\n${taken}</section>`;
+  const ask = '<p class="ask"><a href="https://www.instagram.com/_tick_group">DM TICKED</a> for the first 20 work orders.</p>';
+  return `<section class="front"><h1>Who built this, and what did it cost?</h1>\n${verdict}\n${cards}\n${taken}\n${ask}</section>`;
 }
 
 /** The stations of one order, Ticked earned only by this browser's check of its receipt. */
@@ -111,17 +112,22 @@ function acceptedLine(accepted) {
   return `${how} ${esc(accepted.who)} · ${esc(whenOf(accepted.at))}`;
 }
 
-/** An order's whole record as rows: what was asked, each try, the commit, the checks, who accepted it. */
-export function recordSection(record) {
+/**
+ * An order's whole record as rows: what was asked, each try, the commit, the checks, who accepted it.
+ * `doneOnly` draws just the tries: the other rows live in a receipt, and an order with none has no use for them.
+ */
+export function recordSection(record, doneOnly = false) {
   const tries = record.tries
     .map(
       (one) => `<li><span class="mono-chip" title="${esc(one.agent)}">${esc(monogramOf(one.agent))}</span> ${esc(agentNameOf(one.agent))} · ${one.model === null ? 'model not recorded' : `<span class="mono">${esc(one.model)}</span>`} · ${esc(minutesText(one.minutes))} · ${esc(one.cost)} · ${one.outcome === 'success' ? 'done' : esc(one.outcome)}</li>`,
     )
     .join('');
   const commit = record.commit.state === 'held' ? `<span class="mono">${esc(record.commit.commit)}</span>` : missingLine(record.commit.why);
+  const done = `<div><dt>Done by</dt><dd>${tries === '' ? missingLine('no try is in the statement') : `<ul class="tries">${tries}</ul>`}</dd></div>`;
+  if (doneOnly) return `<dl class="record">\n  ${done}\n</dl>`;
   return `<dl class="record">
   <div><dt>Asked</dt><dd>${askedLine(record.asked)}</dd></div>
-  <div><dt>Done by</dt><dd>${tries === '' ? missingLine('no try is in the statement') : `<ul class="tries">${tries}</ul>`}</dd></div>
+  ${done}
   <div><dt>Checked</dt><dd>${checksLine(record.checks)}</dd></div>
   <div><dt>Approved by</dt><dd>${acceptedLine(record.accepted)}</dd></div>
   <div><dt>Landed</dt><dd>${commit}</dd></div>
@@ -170,7 +176,7 @@ export function orderCard(order, verified, record = recordOf(order), noReceipt =
   return `<article class="card order" id="o-${esc(order.taskId)}">
   ${stationsLine(order, verified)}
   <p class="mono src">${esc(order.taskId)}${order.disposition === null ? '' : ` · ${esc(order.disposition)}`}</p>
-  ${recordSection(record)}
+  ${recordSection(record, noReceipt)}
   ${check}
   <div class="verdict" aria-live="polite"></div>
 </article>`;

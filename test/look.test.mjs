@@ -26,6 +26,18 @@ test('a project whose agents reported no cost says so, and shows no zero', () =>
   assert.doesNotMatch(html, /\$0\.00/u);
 });
 
+test('the front page says what it is and asks for the first work orders, verified or not', () => {
+  for (const verified of [true, false]) {
+    const html = frontPage([summary], verified);
+    const h1 = '<h1>Who built this, and what did it cost?</h1>';
+    const ask = '<p class="ask"><a href="https://www.instagram.com/_tick_group">DM TICKED</a> for the first 20 work orders.</p>';
+    assert.ok(html.includes(h1), `h1, verified ${verified}`);
+    assert.ok(html.includes(ask), `ask, verified ${verified}`);
+    assert.ok(html.indexOf(h1) < html.indexOf('<p class="tag '), 'the h1 comes before the verdict line');
+    assert.ok(html.indexOf(ask) > html.indexOf('</article>'), 'the ask comes after the cards');
+  }
+});
+
 test('a project whose agents reported a cost shows it', () => {
   assert.equal(costOfAgents({ agentTriesReported: 2, usdMicrosReported: 2_138_942 }), '$2.14');
 });
