@@ -4,8 +4,8 @@
 // beside it; the page's policy allows no other request.
 
 import { takenOut, walkIndexes } from './chain.js';
-import { headsOf, ordersOf, summaryOf } from './model.js';
-import { esc, frontPage, orderCard } from './render.js';
+import { changeOneCharacter, headsOf, ordersOf, placeOf, recordOf, summaryOf } from './model.js';
+import { changeNote, esc, frontPage, orderCard, verdictHtml } from './render.js';
 import { verifyDocument } from './verify.js';
 
 const main = document.getElementById('main');
@@ -66,11 +66,25 @@ async function projectPage(slug) {
   }
   const statements = await statementsOf(project);
   const cards = [];
+  const orders = [];
   for (const hash of headsOf(project)) {
     const statement = statements.get(hash);
     if (statement === undefined) continue;
-    for (const order of ordersOf(statement)) cards.push(orderCard(order, false));
+    for (const order of ordersOf(statement)) orders.push(order);
   }
+  // An order's receipt holds what the statement does not; it fills the record only where it verified here.
+  const records = await Promise.all(
+    orders.map(async (order) => {
+      if (!order.accepted) return recordOf(order);
+      try {
+        const read = await checked(receiptPath(project.slug, order.taskId), 'receipt');
+        return recordOf(order, read.verified ? read.document : null);
+      } catch {
+        return recordOf(order);
+      }
+    }),
+  );
+  orders.forEach((order, i) => cards.push(orderCard(order, false, records[i])));
   const notice = index.verified ? '' : '<p class="tag halt">This index does not verify in this browser. Nothing below is shown as checked.</p>';
   main.innerHTML = `${notice}<h1>${esc(project.name)}</h1><p class="mono src">${esc(project.repository)}</p>${cards.join('\n')}`;
   for (const button of main.querySelectorAll('button.check')) {
@@ -78,22 +92,48 @@ async function projectPage(slug) {
   }
 }
 
+const receiptPath = (slug, task) => `projects/${encodeURIComponent(slug)}/receipts/${encodeURIComponent(task)}.json`;
+
 async function checkReceipt(slug, button, indexVerified) {
   const card = button.closest('.order');
   const out = card.querySelector('.verdict');
+  const path = receiptPath(slug, button.dataset.task);
   button.disabled = true;
   try {
-    const read = await checked(`projects/${encodeURIComponent(slug)}/receipts/${encodeURIComponent(button.dataset.task)}.json`, 'receipt');
-    out.textContent = read.verified
-      ? 'Valid: every signature verified in this browser, and the documents chain.'
-      : `Not valid: ${read.verdict.reasons.join('; ')}`;
+    const read = await checked(path, 'receipt');
+    out.innerHTML = verdictHtml(read.verdict);
     card.querySelector('.line li:last-child')?.classList.toggle('ticked', read.verified && indexVerified);
     card.querySelector('.line li:last-child')?.classList.toggle('on', read.verified && indexVerified);
+    addChangeButton(card, button, path);
   } catch (error) {
     out.textContent = `The receipt could not be read: ${error instanceof Error ? error.message : String(error)}`;
   } finally {
     button.disabled = false;
   }
+}
+
+/** Beside "Check it yourself": change one character of the receipt as read now, and check that. */
+function addChangeButton(card, button, path) {
+  if (card.querySelector('button.again') !== null) return;
+  const again = document.createElement('button');
+  again.type = 'button';
+  again.className = 'check again';
+  again.textContent = 'Change one character and check again';
+  again.addEventListener('click', async () => {
+    const out = card.querySelector('.verdict');
+    again.disabled = true;
+    try {
+      // The receipt is read from disk each time and never written: only this copy in memory changes.
+      const change = changeOneCharacter(await textOf(path));
+      const verdict = await verifyDocument(change.text);
+      out.innerHTML = `${changeNote(change, placeOf(change.text, change.at))}${verdictHtml(verdict)}`;
+    } catch (error) {
+      out.textContent = `The receipt could not be changed and checked: ${error instanceof Error ? error.message : String(error)}`;
+    } finally {
+      again.disabled = false;
+    }
+  });
+  button.insertAdjacentElement('afterend', again);
 }
 
 async function route() {
