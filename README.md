@@ -10,11 +10,6 @@ check with one button. Nothing on the page is typed by hand: every figure is
 added up from signed statements (`tick.project-receipt.v2`), and green appears
 only where this browser has just verified a signature.
 
-**Not usable yet.** This commit holds the page's architecture: its routes, the
-record model and how the page draws it. The check that verifies a document in the
-browser comes with the next task; until then `verify.js` says it cannot check, and
-nothing on the page turns green. This paragraph goes with that commit.
-
 ## How it reads a folder
 
 `tick export --hub <folder>` writes what this page reads:
