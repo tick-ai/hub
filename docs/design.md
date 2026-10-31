@@ -68,6 +68,8 @@ Instrument Serif (the one figure a screen leads with, and a receipt's total). Wh
 machine wrote (paths, shas, ids, key ids) is DM Mono. Numbers in rows are tabular.
 Fonts come from the page's own files, since nothing else may load.
 
+The two pages made by `tools/receipt-page.mjs` and `tools/approve-page.mjs` are each one HTML file with no other file beside it, so they use a system font stack, since a single file carries no font files. Every other rule holds for them.
+
 ## The receipt card
 
 Rows, in this order: Asked by · Done by (agent and model) · Changed (files) ·
