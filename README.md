@@ -28,6 +28,13 @@ The fonts in `fonts/` are Instrument Sans, Instrument Serif and DM Mono, each un
 the SIL Open Font License 1.1 (`fonts/OFL.txt`), so the page loads nothing from
 anywhere else.
 
+## Two pages that open from a file
+
+Two pages are made by commands, each as ONE self-contained HTML file a person can receive by any channel (Telegram, email) and open from disk. Neither depends on a host, and neither makes a network request of any kind: the page's content security policy allows none.
+
+- A receipt page, to see one receipt and check it with nothing installed: `node tools/receipt-page.mjs <receipt.json> <out.html>`. It refuses a file that is not a valid `tick.receipt.v2`. The page shows the receipt's rows from its record, and its buttons "Check it yourself" and "Change one character and check again" run `verify.js` in the browser.
+- An approve page, for a company with no developer to approve one order with its own key: `node tools/approve-page.mjs <order-body.json> <out.html>`. It refuses a body that does not make a valid `tick.work-order.v1`. One file approves one order. The page signs in the browser, checks its own result, and offers the signed order to save or copy. A key stays in the browser and never appears in the saved order.
+
 ## Checks
 
 `node --test` runs every test; Tick runs the same as this repository's check.
