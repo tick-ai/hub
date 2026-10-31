@@ -3,7 +3,8 @@
 // HTML file that makes no network request. The decisions are the functions below;
 // the page's own script only wires them to the two buttons.
 import { readFile, writeFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { agentNameOf, dollars } from '../model.js';
 import { verifyDocument } from '../verify.js';
@@ -293,4 +294,4 @@ async function main(argv) {
   return 0;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) process.exitCode = await main(process.argv.slice(2));
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) process.exitCode = await main(process.argv.slice(2));

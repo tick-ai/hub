@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import vm from 'node:vm';
 
@@ -245,7 +246,7 @@ test('the command writes the page, and refuses a body with its reasons', async (
   try {
     const bodyPath = join(dir, 'body.json');
     const outPath = join(dir, 'approve.html');
-    const command = (file) => spawnSync(process.execPath, [new URL('../tools/approve-page.mjs', import.meta.url).pathname, file, outPath], { encoding: 'utf8' });
+    const command = (file) => spawnSync(process.execPath, [fileURLToPath(new URL('../tools/approve-page.mjs', import.meta.url)), file, outPath], { encoding: 'utf8' });
     await writeFile(join(dir, 'bad.json'), JSON.stringify({ ...BODY, what: '' }));
     const refused = command(join(dir, 'bad.json'));
     assert.notEqual(refused.status, 0);

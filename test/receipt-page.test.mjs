@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { readdir, readFile, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import vm from 'node:vm';
 
@@ -90,7 +91,7 @@ test('a document with one changed character is refused by the command', async ()
   try {
     const input = join(dir, 'receipt.json');
     const output = join(dir, 'receipt.html');
-    const command = () => spawnSync(process.execPath, [here('tools/receipt-page.mjs').pathname, input, output], { encoding: 'utf8' });
+    const command = () => spawnSync(process.execPath, [fileURLToPath(here('tools/receipt-page.mjs')), input, output], { encoding: 'utf8' });
     await writeFile(input, changeOneCharacter(SAMPLE).text);
     const refused = command();
     assert.notEqual(refused.status, 0);
